@@ -15,6 +15,8 @@ export default function AddStartup() {
     description: "",
     founder: "",
     website: "",
+    email: "",
+    phoneNumber: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -36,8 +38,11 @@ export default function AddStartup() {
       const payload = result.data;
 
       await axios.post(
-        "http://localhost:5000/api/startups/addStartup",
-        payload
+        axios.post("http://localhost:5000/api/startups/addStartup", payload, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
       );
 
       alert("Startup added successfully!");
@@ -53,6 +58,8 @@ export default function AddStartup() {
         description: "",
         founder: "",
         website: "",
+        email: "",
+        phoneNumber: "",
       });
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Request failed");
@@ -99,13 +106,30 @@ export default function AddStartup() {
           {/* Sector */}
           <div className="form-group">
             <label>Sector *</label>
-            <input
-              type="text"
-              placeholder="Enter sector"
+            <select
               value={form.sector}
               onChange={(e) => update("sector", e.target.value)}
               required
-            />
+            >
+              <option value="">Select a sector</option>
+              <option value="E-commerce">E-commerce</option>
+              <option value="B2B Commerce">B2B Commerce</option>
+              <option value="Quick Commerce">Quick Commerce</option>
+              <option value="Fintech">Fintech</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Food Delivery">Food Delivery</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Fantasy Sports">Fantasy Sports</option>
+              <option value="Social Media">Social Media</option>
+              <option value="Travel">Travel</option>
+              <option value="Hospitality">Hospitality</option>
+              <option value="Edtech">Edtech</option>
+              <option value="SaaS">SaaS</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Health & Fitness">Health & Fitness</option>
+              <option value="Eyewear">Eyewear</option>
+            </select>
           </div>
 
           {/* Funding */}
@@ -174,6 +198,28 @@ export default function AddStartup() {
               placeholder="https://example.com"
               value={form.website}
               onChange={(e) => update("website", e.target.value)}
+            />
+          </div>
+
+          {/* Email */}
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              placeholder="contact@startup.com"
+              value={form.email}
+              onChange={(e) => update("email", e.target.value)}
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="form-group">
+            <label>Phone Number</label>
+            <input
+              type="tel"
+              placeholder="+91 9876543210"
+              value={form.phoneNumber}
+              onChange={(e) => update("phoneNumber", e.target.value)}
             />
           </div>
 

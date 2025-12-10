@@ -1,45 +1,28 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./analytics.css";
 
 export default function Analytics() {
-  const { id } = useParams();
   const navigate = useNavigate();
   const [startups, setStartups] = useState([]);
-  const [individualStartup, setIndividualStartup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (id) {
-      // Load specific startup data for individual analytics
-      axios
-        .get(`http://localhost:5000/api/startups/${id}`)
-        .then((res) => {
-          setIndividualStartup(res.data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message);
-          setLoading(false);
-          console.error(err);
-        });
-    } else {
-      // Load all startups for general analytics
-      axios
-        .get("http://localhost:5000/api/startups")
-        .then((res) => {
-          setStartups(res.data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message);
-          setLoading(false);
-          console.error(err);
-        });
-    }
-  }, [id]);
+    // Load all startups for general analytics
+    axios
+      .get("http://localhost:5000/api/startups")
+      .then((res) => {
+        setStartups(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+        console.error(err);
+      });
+  }, []);
 
   // Calculate analytics data
   const sectorData = startups.reduce((acc, s) => {
@@ -59,6 +42,47 @@ export default function Analytics() {
   const topStates = Object.entries(stateData)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 8);
+
+  // New analytics calculations
+  const fundingRanges = startups.reduce((acc, s) => {
+    const funding = s.funding || 0;
+    let range = "Not Funded";
+    if (funding >= 1000000) range = "₹10M+";
+    else if (funding >= 500000) range = "₹5M-₹10M";
+    else if (funding >= 100000) range = "₹1M-₹5M";
+    else if (funding >= 10000) range = "₹100K-₹1M";
+    else if (funding > 0) range = "₹1K-₹100K";
+    acc[range] = (acc[range] || 0) + 1;
+    return acc;
+  }, {});
+
+  const companyTypeData = startups.reduce((acc, s) => {
+    acc[s.companytype || "Not Specified"] = (acc[s.companytype || "Not Specified"] || 0) + 1;
+    return acc;
+  }, {});
+
+  const yearData = startups.reduce((acc, s) => {
+    const year = s.registrationDate ? new Date(s.registrationDate).getFullYear() : "Unknown";
+    acc[year] = (acc[year] || 0) + 1;
+    return acc;
+  }, {});
+
+  const totalFunding = startups.reduce((sum, s) => sum + (s.funding || 0), 0);
+  const avgFunding = totalFunding / startups.length;
+  const totalTurnover = startups.reduce((sum, s) => sum + (s.turnover || 0), 0);
+  const avgRating = startups.reduce((sum, s) => sum + (s.rating || 0), 0) / startups.length;
+
+  const sectorFundingData = startups.reduce((acc, s) => {
+    if (!acc[s.sector]) acc[s.sector] = { count: 0, totalFunding: 0 };
+    acc[s.sector].count++;
+    acc[s.sector].totalFunding += s.funding || 0;
+    return acc;
+  }, {});
+
+  const topFundedSectors = Object.entries(sectorFundingData)
+    .map(([sector, data]) => ({ sector, ...data, avgFunding: data.totalFunding / data.count }))
+    .sort((a, b) => b.totalFunding - a.totalFunding)
+    .slice(0, 5);
 
   const getChartColor = (index) => {
     const colors = ["#14B8A6", "#8B5CF6", "#3B82F6", "#F59E0B", "#EF4444"];
@@ -113,117 +137,11 @@ export default function Analytics() {
   const sectorPie = renderPieChart(sectorData);
   const statePie = renderPieChart(stateData);
 
-  // If we have an individual startup ID, show specific analytics
-  if (id && individualStartup) {
-    return (
-      <div className="analytics-container">
-        {/* Back Button */}
-        <button onClick={() => navigate("/")} className="btn-back">
-          ← Back to Dashboard
-        </button>
-
-        <div className="individual-analytics-header">
-          <h1 className="analytics-title">{individualStartup.name} Analytics</h1>
-          <p className="analytics-subtitle">Detailed insights for this startup</p>
-        </div>
-
-        <div className="individual-metrics">
-          <div className="metric-card metric-card-3d">
-            <div className="metric-card-inner">
-              <span className="stat-icon">🚀</span>
-              <div>
-                <p className="metric-label">Startup Name</p>
-                <p className="metric-value">{individualStartup.name}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="metric-card metric-card-3d">
-            <div className="metric-card-inner">
-              <span className="stat-icon">🏷️</span>
-              <div>
-                <p className="metric-label">Sector</p>
-                <p className="metric-value">{individualStartup.sector}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="metric-card metric-card-3d">
-            <div className="metric-card-inner">
-              <span className="stat-icon">📍</span>
-              <div>
-                <p className="metric-label">Location</p>
-                <p className="metric-value">{individualStartup.state}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="metric-card metric-card-3d">
-            <div className="metric-card-inner">
-              <span className="stat-icon">📅</span>
-              <div>
-                <p className="metric-label">Founded</p>
-                <p className="metric-value">
-                  {individualStartup.foundedYear || "Not specified"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="individual-details">
-          <div className="detail-card card">
-            <h3 className="card-title">Complete Startup Information</h3>
-            <div className="detail-grid">
-              <div className="detail-item">
-                <strong>Email:</strong>
-                <span>{individualStartup.email || "Not provided"}</span>
-              </div>
-              <div className="detail-item">
-                <strong>Phone:</strong>
-                <span>{individualStartup.phone || "Not provided"}</span>
-              </div>
-              <div className="detail-item">
-                <strong>Website:</strong>
-                <span>
-                  {individualStartup.website ? (
-                    <a href={individualStartup.website} target="_blank" rel="noopener noreferrer">
-                      {individualStartup.website} →
-                    </a>
-                  ) : (
-                    "Not provided"
-                  )}
-                </span>
-              </div>
-              <div className="detail-item">
-                <strong>Description:</strong>
-                <span>{individualStartup.description || "No description available"}</span>
-              </div>
-              <div className="detail-item">
-                <strong>Status:</strong>
-                <span className="status-active">Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="action-buttons">
-          <button onClick={() => navigate(`/startup/${id}`)} className="btn btn-primary">
-            ← Back to Startup Details
-          </button>
-          <button onClick={() => navigate("/analytics")} className="btn btn-secondary">
-            View Overall Analytics
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="analytics-container">
       {loading && (
-        <div className="loading-container">
-          <div className="spinner"></div>
+        <div className="analytics-loading-container">
+          <div className="analytics-spinner"></div>
           <p>Loading analytics...</p>
         </div>
       )}
@@ -241,7 +159,7 @@ export default function Analytics() {
           <div className="metrics-grid">
             <div className="metric-card metric-card-3d">
               <div className="metric-card-inner">
-                <span className="metric-icon">📈</span>
+                <span className="metric-icon">📊</span>
                 <div>
                   <p className="metric-label">Total Startups</p>
                   <p className="metric-value">{startups.length}</p>
@@ -251,7 +169,7 @@ export default function Analytics() {
 
             <div className="metric-card metric-card-3d">
               <div className="metric-card-inner">
-                <span className="metric-icon">🎯</span>
+                <span className="metric-icon">🔖</span>
                 <div>
                   <p className="metric-label">Unique Sectors</p>
                   <p className="metric-value">
@@ -283,6 +201,120 @@ export default function Analytics() {
                       ? topSectors[0][0].substring(0, 12)
                       : "N/A"}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Key Metrics for Funding and Performance */}
+            <div className="metric-card metric-card-3d">
+              <div className="metric-card-inner">
+                <span className="metric-icon">💰</span>
+                <div>
+                  <p className="metric-label">Total Funding</p>
+                  <p className="metric-value">₹{(totalFunding / 10000000).toFixed(1)}M </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card metric-card-3d">
+              <div className="metric-card-inner">
+                <span className="metric-icon">📈</span>
+                <div>
+                  <p className="metric-label">Avg. Rating</p>
+                  <p className="metric-value">{avgRating.toFixed(1)}⭐</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card metric-card-3d">
+              <div className="metric-card-inner">
+                <span className="metric-icon">💼</span>
+                <div>
+                  <p className="metric-label">Total Turnover</p>
+                  <p className="metric-value">₹{(totalTurnover / 10000000).toFixed(1)}M </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card metric-card-3d">
+              <div className="metric-card-inner">
+                <span className="metric-icon">🏢</span>
+                <div>
+                  <p className="metric-label">Avg. Funding</p>
+                  <p className="metric-value">₹{(avgFunding / 10000000).toFixed(1)}M </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Funding and Company Type Analysis */}
+          <div className="pie-charts-grid">
+            {/* Funding Distribution Pie Chart */}
+            <div className="pie-chart-card card">
+              <h3 className="chart-title">Funding Distribution</h3>
+              <div className="pie-chart-container">
+                <svg viewBox="0 0 120 120" className="pie-chart">
+                  {renderPieChart(fundingRanges, 6).map((slice, index) => (
+                    <path
+                      key={index}
+                      d={slice.path}
+                      fill={slice.color}
+                      stroke="#FFFFFF"
+                      strokeWidth="1"
+                      className="pie-slice"
+                    />
+                  ))}
+                </svg>
+                <div className="pie-legend">
+                  {renderPieChart(fundingRanges, 6).map((slice, index) => (
+                    <div key={index} className="legend-item">
+                      <span
+                        className="legend-color"
+                        style={{ backgroundColor: slice.color }}
+                      ></span>
+                      <span className="legend-text">
+                        {slice.label}
+                      </span>
+                      <span className="legend-percentage">
+                        {slice.percentage}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Company Type Distribution */}
+            <div className="pie-chart-card card">
+              <h3 className="chart-title">Company Types</h3>
+              <div className="pie-chart-container">
+                <svg viewBox="0 0 120 120" className="pie-chart">
+                  {renderPieChart(companyTypeData, 5).map((slice, index) => (
+                    <path
+                      key={index}
+                      d={slice.path}
+                      fill={slice.color}
+                      stroke="#FFFFFF"
+                      strokeWidth="1"
+                      className="pie-slice"
+                    />
+                  ))}
+                </svg>
+                <div className="pie-legend">
+                  {renderPieChart(companyTypeData, 5).map((slice, index) => (
+                    <div key={index} className="legend-item">
+                      <span
+                        className="legend-color"
+                        style={{ backgroundColor: slice.color }}
+                      ></span>
+                      <span className="legend-text">
+                        {slice.label.substring(0, 12)}
+                      </span>
+                      <span className="legend-percentage">
+                        {slice.percentage}%
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -403,6 +435,60 @@ export default function Analytics() {
                           className="chart-bar chart-bar-animated"
                           style={{
                             width: `${(count / maxValue) * 100}%`,
+                            backgroundColor: getChartColor(index),
+                            animationDelay: `${index * 0.1}s`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Registration Year Trends */}
+              <div className="chart-card card chart-modal-3d">
+                <h3 className="chart-title">Registration Trends</h3>
+                <div className="chart-content">
+                  {Object.entries(yearData)
+                    .sort(([a], [b]) => b - a)
+                    .slice(0, 8)
+                    .reverse()
+                    .map(([year, count], index) => (
+                      <div key={year} className="chart-bar-item">
+                        <div className="chart-bar-label">
+                          <span className="label-text">{year}</span>
+                          <span className="label-value">{count}</span>
+                        </div>
+                        <div className="chart-bar-bg">
+                          <div
+                            className="chart-bar chart-bar-animated"
+                            style={{
+                              width: `${(count / Math.max(...Object.values(yearData))) * 100}%`,
+                              backgroundColor: getChartColor(index),
+                              animationDelay: `${index * 0.1}s`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Top Funded Sectors */}
+              <div className="chart-card card chart-modal-3d">
+                <h3 className="chart-title">Top Funded Sectors</h3>
+                <div className="chart-content">
+                  {topFundedSectors.map(({ sector, totalFunding }, index) => (
+                    <div key={sector} className="chart-bar-item">
+                      <div className="chart-bar-label">
+                        <span className="label-text">{sector.substring(0, 12)}</span>
+                        <span className="label-value">₹{(totalFunding / 10000000).toFixed(1)}M</span>
+                      </div>
+                      <div className="chart-bar-bg">
+                        <div
+                          className="chart-bar chart-bar-animated"
+                          style={{
+                            width: `${(totalFunding / Math.max(...topFundedSectors.map(s => s.totalFunding))) * 100}%`,
                             backgroundColor: getChartColor(index),
                             animationDelay: `${index * 0.1}s`,
                           }}

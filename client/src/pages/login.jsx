@@ -1,113 +1,103 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./login.css";
-import { sanitizeLoginForm } from "../utils/sanitize";
+import axios from "axios";
 
 export default function Login() {
+  const navigate = useNavigate();
+
   const [isLogin, setIsLogin] = useState(true);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Handle input change
   const handleChange = (e) => {
-    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [e.target.name]: e.target.value,
     }));
     setError("");
   };
 
-  const validateForm = () => {
-    if (!formData.email || !formData.password) {
-      setError("Email and password are required");
-      return false;
-    }
-
-    if (!isLogin) {
-      if (!formData.fullName) {
-        setError("Full name is required");
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setError("Password must be at least 6 characters");
-        return false;
-      }
-    }
-
-    return true;
+  // Validate signup fields
+  const validateSignup = () => {
+    if (!formData.fullName) return "Full name is required";
+    if (!formData.email) return "Email is required";
+    if (!formData.password) return "Password is required";
+    if (formData.password.length < 6)
+      return "Password must be at least 6 characters";
+    if (formData.password !== formData.confirmPassword)
+      return "Passwords do not match";
+    return null;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setError("");
+  // Login request
+  const handleLogin = async () => {
+    const { email, password } = formData;
 
     try {
-      const safeData = sanitizeLoginForm(formData);
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
-      const payload = isLogin
-        ? { email: safeData.email, password: safeData.password }
-        : {
-            fullName: safeData.fullName,
-            email: safeData.email,
-            password: safeData.password,
-          };
-
-      // Mock API call - replace with actual API endpoint
-      console.log(`${isLogin ? "Login" : "Signup"} attempt:`, payload);
-
-      // Simulate API response
-      setSuccess(isLogin ? "Login successful!" : "Signup successful!");
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-
-      // Reset form
-      setFormData({
-        fullName: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
       });
+
+      localStorage.setItem("token", res.data.token);
+      navigate("/");
     } catch (err) {
-      setError(err.message || "An error occurred. Please try again.");
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || "Invalid credentials");
     }
   };
 
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setError("");
-    setSuccess("");
-    setFormData({
-      fullName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
+  // Signup request
+  const handleSignup = async () => {
+    const errorMsg = validateSignup();
+    if (errorMsg) {
+      setError(errorMsg);
+      return;
+    }
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // Auto-login after signup (optional)
+      localStorage.setItem("token", res.data.token);
+      navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.message || "Signup failed");
+    }
+  };
+
+  // Submit handler
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (isLogin) {
+      await handleLogin();
+    } else {
+      await handleSignup();
+    }
+
+    setLoading(false);
   };
 
   return (
     <div className="login-container">
       <div className="login-form-wrapper">
         <div className="login-form-card card">
-          {/* Header */}
+
           <div className="login-header">
             <h1 className="login-title">
               {isLogin ? "Welcome Back" : "Create Account"}
@@ -119,97 +109,69 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="alert alert-danger">
-              <span>⚠️</span>
-              {error}
+              <span>⚠️</span> {error}
             </div>
           )}
 
-          {/* Success Message */}
-          {success && (
-            <div className="alert alert-success">
-              <span>✓</span>
-              {success}
-            </div>
-          )}
-
-          {/* Form */}
           <form onSubmit={handleSubmit} className="login-form">
-            {/* Full Name - Only for Signup */}
             {!isLogin && (
               <div className="form-group">
-                <label htmlFor="fullName" className="form-label">
-                  Full Name
-                </label>
+                <label className="form-label">Full Name</label>
                 <input
                   type="text"
-                  id="fullName"
                   name="fullName"
+                  className="form-input"
+                  placeholder="Enter your full name"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="Enter your full name"
-                  className="form-input"
                   disabled={loading}
                 />
               </div>
             )}
 
-            {/* Email */}
             <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email Address
-              </label>
+              <label className="form-label">Email Address</label>
               <input
                 type="email"
-                id="email"
                 name="email"
+                className="form-input"
+                placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
-                className="form-input"
                 disabled={loading}
               />
             </div>
 
-            {/* Password */}
             <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                Password
-              </label>
+              <label className="form-label">Password</label>
               <input
                 type="password"
-                id="password"
                 name="password"
+                className="form-input"
+                placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
-                className="form-input"
                 disabled={loading}
               />
             </div>
 
-            {/* Confirm Password - Only for Signup */}
             {!isLogin && (
               <div className="form-group">
-                <label htmlFor="confirmPassword" className="form-label">
-                  Confirm Password
-                </label>
+                <label className="form-label">Confirm Password</label>
                 <input
                   type="password"
-                  id="confirmPassword"
                   name="confirmPassword"
+                  className="form-input"
+                  placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Confirm your password"
-                  className="form-input"
                   disabled={loading}
                 />
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
               className="login-btn btn-primary"
@@ -223,16 +185,13 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Toggle Mode */}
           <div className="login-footer">
-            <p className="toggle-text">
-              {isLogin
-                ? "Don't have an account? "
-                : "Already have an account? "}
+            <p>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
               <button
                 type="button"
-                onClick={toggleMode}
                 className="toggle-btn"
+                onClick={() => setIsLogin(!isLogin)}
                 disabled={loading}
               >
                 {isLogin ? "Sign Up" : "Sign In"}
@@ -240,21 +199,19 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Social Login */}
           <div className="social-login">
             <div className="divider">Or continue with</div>
             <div className="social-buttons">
               <button type="button" className="social-btn" disabled={loading}>
-                <span>🔵</span> Google
+                🔵 Google
               </button>
               <button type="button" className="social-btn" disabled={loading}>
-                <span>📱</span> GitHub
+                📱 GitHub
               </button>
             </div>
           </div>
         </div>
 
-        {/* Side Image/Info */}
         <div className="login-info">
           <div className="info-content">
             <h2>StartupHub</h2>
@@ -267,6 +224,7 @@ export default function Login() {
             </ul>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -1,17 +1,36 @@
 @import "tailwindcss";
 :root {
+  /* Font Variables */
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
+  /* Color Scheme */
   color-scheme: light dark;
   color: rgba(0, 0, 0, 0.87);
   background-color: #242424;
 
+  /* Font Rendering */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Custom CSS Variables for Home Page */
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --primary: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-light: #60a5fa;
+  --accent-purple: #8b5cf6;
+  --accent-cool: #06ffa5;
+
+  /* Card & Border Colors */
+  --card-bg: rgba(15, 23, 42, 0.9);
+  --card-bg-hover: rgba(30, 41, 59, 0.95);
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.2);
 }
 
 a {

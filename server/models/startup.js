@@ -49,11 +49,23 @@ const StartupSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  website: {
+    type: String,
+    default: "",
+  },
+  email: {
+    type: String,
+    default: "",
+  },
+  phoneNumber: {
+    type: String,
+    default: "",
+  },
   founder: {
     type: String,
     default: "",
   },
-  website: {
+  imageUrl: {
     type: String,
     default: "",
   },

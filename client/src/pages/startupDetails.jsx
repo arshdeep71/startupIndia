@@ -1,7 +1,19 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  TrendingUp,
+  MapPin,
+  Calendar,
+  CheckCircle,
+  Mail,
+  Phone,
+  Globe,
+  User,
+  Building,
+} from "lucide-react";
 import axios from "axios";
+import { formatIndianCurrency as formatMoney } from "../utils/formatMoney.js";
 import "./startupDetails.css";
 
 export default function StartupDetails() {
@@ -66,142 +78,169 @@ export default function StartupDetails() {
 
   return (
     <div className="details-container">
-      {/* Back Button */}
-      <button onClick={() => navigate("/")} className="btn-back">
-        ← Back to Dashboard
-      </button>
-
-      {/* Details Card */}
-      <div className="details-card card">
-        <div className="details-header">
-          <div>
-            <h1 className="details-title">{startup.name}</h1>
-            <p className="details-subtitle">{startup.sector}</p>
-          </div>
-          <span className="badge badge-primary">{startup.sector}</span>
+      {/* Navigation Header */}
+      <div className="nav-header">
+        <button onClick={() => navigate("/dashboard")} className="btn-back">
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </button>
+        <div className="page-indicator">
+          <span className="breadcrumb">Dashboard</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-current">Startup Details</span>
         </div>
+      </div>
 
-        {/* Main Details Grid */}
-        <div className="details-grid">
-          {/* Left Column */}
-          <div className="details-left">
-            <div className="detail-section">
-              <h3 className="section-title">Basic Information</h3>
+      {/* Hero Section */}
+      <div className="hero-section">
+        <div className="hero-content">
+          <div className="hero-main">
+            <h1 className="hero-title">{startup.name}</h1>
+            <p className="hero-subtitle">{startup.sector}</p>
+            <br />
+          </div>
+        </div>
+      </div>
 
-              <div className="detail-row">
-                <label className="detail-label">State</label>
-                <p className="detail-value">{startup.state}</p>
-              </div>
-
-              {startup.email && (
-                <div className="detail-row">
-                  <label className="detail-label">Email</label>
-                  <a
-                    href={`mailto:${startup.email}`}
-                    className="detail-value link"
-                  >
-                    {startup.email}
-                  </a>
+      {/* Main Content */}
+      <div className="content-wrapper">
+        {/* Information Cards Grid */}
+        <div className="info-grid">
+          {/* Contact Information */}
+          <div className="info-card">
+            <div className="card-header">
+              <h3>Contact Information</h3>
+            </div>
+            <div className="card-content">
+              {startup.founder && (
+                <div className="info-item">
+                  <User size={18} className="info-icon" />
+                  <div>
+                    <span className="info-label">Founder</span>
+                    <span className="info-value"> {startup.founder}</span>
+                  </div>
                 </div>
               )}
 
-              {startup.phone && (
-                <div className="detail-row">
-                  <label className="detail-label">Phone</label>
-                  <a
-                    href={`tel:${startup.phone}`}
-                    className="detail-value link"
-                  >
-                    {startup.phone}
-                  </a>
+              {startup.email && (
+                <div className="info-item">
+                  <Mail size={18} className="info-icon" />
+                  <div>
+                    <span className="info-label">Email </span>
+                    <a href={`mailto:${startup.email}`} className="info-link">
+                      {startup.email}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {startup.phoneNumber && (
+                <div className="info-item">
+                  <Phone size={18} className="info-icon" />
+                  <div>
+                    <span className="info-label">Phone </span>
+                    <a
+                      href={`tel:${startup.phoneNumber}`}
+                      className="info-link"
+                    >
+                      {startup.phoneNumber}
+                    </a>
+                  </div>
                 </div>
               )}
 
               {startup.website && (
-                <div className="detail-row">
-                  <label className="detail-label">Website</label>
-                  <a
-                    href={startup.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="detail-value link"
-                  >
-                    Visit Website →
-                  </a>
+                <div className="info-item">
+                  <Globe size={18} className="info-icon" />
+                  <div>
+                    <span className="info-label">Website </span>
+                    <a
+                      href={startup.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="info-link"
+                    >
+                      {startup.name}.com 
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Additional Details */}
-            {(startup.foundedYear || startup.description) && (
-              <div className="detail-section">
-                <h3 className="section-title">Additional Details</h3>
-
-                {startup.foundedYear && (
-                  <div className="detail-row">
-                    <label className="detail-label">Founded Year</label>
-                    <p className="detail-value">{startup.foundedYear}</p>
-                  </div>
-                )}
-
-                {startup.description && (
-                  <div className="detail-row">
-                    <label className="detail-label">Description</label>
-                    <p className="detail-value description">
-                      {startup.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Right Column - Stats */}
-          <div className="details-right">
-            <div className="stats-card">
-              <span className="stat-icon">📊</span>
-              <div>
-                <p className="stat-label">Sector</p>
-                <p className="stat-value">{startup.sector}</p>
-              </div>
+          {/* Business Information */}
+          <div className="info-card">
+            <div className="card-header">
+              <h3>Business Details </h3>
             </div>
-
-            <div className="stats-card">
-              <span className="stat-icon">📍</span>
-              <div>
-                <p className="stat-label">Location</p>
-                <p className="stat-value">{startup.state}</p>
-              </div>
-            </div>
-
-            {startup.foundedYear && (
-              <div className="stats-card">
-                <span className="stat-icon">📅</span>
+            <div className="card-content">
+              <div className="info-item">
+                <MapPin size={18} className="info-icon" />
                 <div>
-                  <p className="stat-label">Founded</p>
-                  <p className="stat-value">{startup.foundedYear}</p>
+                  <span className="info-label">Location </span>
+                  <span className="info-value">{startup.state}</span>
                 </div>
               </div>
-            )}
 
-            <div className="stats-card">
-              <span className="stat-icon">🚀</span>
-              <div>
-                <p className="stat-label">Status</p>
-                <p className="stat-value">Active</p>
+              <div className="info-item">
+                <Building size={18} className="info-icon" />
+                <div>
+                  <span className="info-label">Company Type </span>
+                  <span className="info-value">
+                    {startup.companytype || "Not specified"}
+                  </span>
+                </div>
+              </div>
+
+              {startup.foundedYear && (
+                <div className="info-item">
+                  <Calendar size={18} className="info-icon" />
+                  <div>
+                    <span className="info-label">Founder</span>
+                    <span className="info-value">{startup.foundeder}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="info-item">
+                <TrendingUp size={18} className="info-icon" />
+                <div>
+                  <span className="info-label">Funding </span>
+                  <span className="info-value funding">
+                    {startup.funding
+                      ? formatMoney(startup.funding)
+                      : "Not specified"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Description Section */}
+        {startup.description && (
+          <div className="description-card">
+            <div className="card-header">
+              <h3>About {startup.name}</h3>
+            </div>
+            <div className="card-content">
+              <p className="description-text">{startup.description}</p>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
-        <div className="action-buttons">
+        <div className="action-section">
           <button
             onClick={() => navigate(`/analytics/${id}`)}
-            className="btn btn-secondary"
+            className="btn btn-primary btn-large"
           >
+            <TrendingUp size={20} />
             View Startup Analytics
           </button>
+          <div className="action-hint">
+            Get detailed insights and market analysis for {startup.name}
+          </div>
         </div>
       </div>
     </div>

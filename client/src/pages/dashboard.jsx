@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./dashboard.css";
-import { sanitizeSearchTerm, sanitizeText, sanitizeNumber, sanitizeUrl } from "../utils/sanitize";
+import "../pages/dashboard.css";
+import {
+  sanitizeSearchTerm,
+  sanitizeText,
+  sanitizeNumber,
+  sanitizeUrl,
+} from "../utils/sanitize";
 import { formatIndianCurrency } from "../utils/formatMoney";
+import { getSectorImage, getSectorIcon } from "../utils/sectorImages";
 
 export default function Dashboard() {
   const [startups, setStartups] = useState([]);
@@ -46,10 +52,12 @@ export default function Dashboard() {
       (sum, s) => sum + (Number(s.funding) || 0),
       0
     );
-    const uniqueStates = new Set(startups.map((s) => s.state).filter(Boolean))
-      .size;
-    const uniqueSectors = new Set(startups.map((s) => s.sector).filter(Boolean))
-      .size;
+    const uniqueStates = new Set(
+      startups.map((s) => s.state).filter(Boolean)
+    ).size;
+    const uniqueSectors = new Set(
+      startups.map((s) => s.sector).filter(Boolean)
+    ).size;
 
     return {
       total,
@@ -118,7 +126,12 @@ export default function Dashboard() {
 
       const matchesFunding = funding >= minFundingValue;
 
-      return matchesSearch && matchesState && matchesSector && matchesFunding;
+      return (
+        matchesSearch &&
+        matchesState &&
+        matchesSector &&
+        matchesFunding
+      );
     });
   }, [startups, searchTerm, filterState, filterSector, minFunding]);
 
@@ -133,7 +146,13 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      {/* Top stats for Indian startup overview */}
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Indian Startup Ecosystem</h1>
+        <p className="dashboard-subtitle">
+          Discover and explore India's thriving startup landscape
+        </p>
+      </div>
+
       {!loading && !error && (
         <div className="stats-grid">
           <div className="stat-card">
@@ -143,6 +162,7 @@ export default function Dashboard() {
               <p className="stat-value">{stats.total}</p>
             </div>
           </div>
+
           <div className="stat-card">
             <div className="stat-icon">💰</div>
             <div className="stat-content">
@@ -152,19 +172,21 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+
           <div className="stat-card">
             <div className="stat-icon">📊</div>
             <div className="stat-content">
-              <p className="stat-label">Avg. Funding / Startup</p>
+              <p className="stat-label">Avg. Funding</p>
               <p className="stat-value">
                 ₹{formatIndianCurrency(stats.avgFunding)}
               </p>
             </div>
           </div>
+
           <div className="stat-card">
             <div className="stat-icon">🌍</div>
             <div className="stat-content">
-              <p className="stat-label">States & Sectors</p>
+              <p className="stat-label">States / Sectors</p>
               <p className="stat-value">
                 {stats.uniqueStates} / {stats.uniqueSectors}
               </p>
@@ -173,7 +195,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Search & filters */}
       {!loading && !error && (
         <div className="search-section">
           <div className="filters-container">
@@ -181,30 +202,33 @@ export default function Dashboard() {
               <input
                 type="text"
                 className="search-input"
-                placeholder="Search by startup name, sector or state (e.g. FinTech, Maharashtra, EdTech)"
+                placeholder="Search by startup name, sector, or state..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(sanitizeText(e.target.value, 80))}
+                onChange={(e) =>
+                  setSearchTerm(sanitizeText(e.target.value, 80))
+                }
               />
+
               {searchTerm && (
                 <button
-                  type="button"
                   className="clear-search-btn"
                   onClick={() => setSearchTerm("")}
-                  title="Clear search"
-                  aria-label="Clear search"
                 >
                   ✕
                 </button>
               )}
             </div>
+
             <div className="filters-row">
               <div className="filter-item">
-                <label className="filter-label">State/Region</label>
+                <label className="filter-label">State</label>
                 <select
                   value={filterState}
-                  onChange={(e) => setFilterState(sanitizeText(e.target.value))}
+                  onChange={(e) =>
+                    setFilterState(sanitizeText(e.target.value))
+                  }
                 >
-                  <option value="">All Indian States</option>
+                  <option value="">All States</option>
                   {uniqueStateOptions.map((state) => (
                     <option key={state} value={state}>
                       {state}
@@ -217,7 +241,9 @@ export default function Dashboard() {
                 <label className="filter-label">Sector</label>
                 <select
                   value={filterSector}
-                  onChange={(e) => setFilterSector(sanitizeText(e.target.value))}
+                  onChange={(e) =>
+                    setFilterSector(sanitizeText(e.target.value))
+                  }
                 >
                   <option value="">All Sectors</option>
                   {uniqueSectorOptions.map((sector) => (
@@ -229,11 +255,11 @@ export default function Dashboard() {
               </div>
 
               <div className="filter-item">
-                <label className="filter-label">Minimum Funding</label>
+                <label className="filter-label">Min Funding</label>
                 <input
                   type="number"
                   min="0"
-                  placeholder="Min. funding (₹)"
+                  placeholder="₹ amount"
                   value={minFunding}
                   onChange={(e) => setMinFunding(e.target.value)}
                 />
@@ -259,7 +285,7 @@ export default function Dashboard() {
       {!loading && !error && (
         <div className="startups-section">
           <h2 className="section-title">
-            Startups {searchTerm && `(${filteredStartups.length})`}
+            Startups ({filteredStartups.length})
           </h2>
 
           {filteredStartups.length > 0 ? (
@@ -267,58 +293,36 @@ export default function Dashboard() {
               {filteredStartups.map((startup) => (
                 <div
                   key={startup._id}
-                  className="startup-card card"
+                  className="startup-card"
                   onClick={() => handleStartupClick(startup._id)}
-                  style={{ cursor: "pointer" }}
                 >
-                  <div className="card-header">
-                    <h3 className="startup-name">{startup.name}</h3>
-                    <span className="badge badge-primary">
-                      {startup.sector || "Sector NA"}
+                  <div className="startup-image">
+                    <img
+                      src={getSectorImage(startup.sector)}
+                      alt={`${startup.sector} sector`}
+                      className="startup-logo"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=200&fit=crop";
+                      }}
+                    />
+                    <span className="sector-badge">
+                      {getSectorIcon(startup.sector)} {startup.sector}
                     </span>
                   </div>
 
-                  <div className="startup-details">
-                    <div className="detail-item">
-                      <span className="detail-label">State</span>
-                      <span className="detail-value">
-                        {startup.state || "Not specified"}
-                      </span>
-                    </div>
+                  <div className="startup-content">
+                    <h3 className="startup-name">{startup.name}</h3>
 
-                    {typeof startup.funding === "number" && (
-                      <div className="detail-item">
-                        <span className="detail-label">Funding</span>
-                        <span className="detail-value text-primary">
-                          ₹{formatIndianCurrency(startup.funding)}
-                        </span>
-                      </div>
-                    )}
-
-                    {safeWebsite(startup.website) && (
-                      <div className="detail-item">
-                        <span className="detail-label">Website</span>
-                        <a
-                          href={safeWebsite(startup.website)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="detail-value"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Visit →
-                        </a>
-                      </div>
-                    )}
+                    <button className="more-details-btn" onClick={(e) => { e.stopPropagation(); handleStartupClick(startup._id); }}>
+                      More Details
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="no-results">
-              <p>
-                No startups found for the selected filters. Try clearing some
-                filters or changing your search.
-              </p>
+              <p>No startups match your filters.</p>
             </div>
           )}
         </div>
